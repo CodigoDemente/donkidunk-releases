@@ -73,6 +73,8 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+          repository: CodigoDemente/donkidunk
+          token: ${{ secrets.DONKIDUNK_TOKEN }}
           ref: main
 
       - uses: actions/setup-node@v4
@@ -118,6 +120,8 @@ jobs:
         with:
           ref: main
           lfs: true
+          repository: CodigoDemente/donkidunk
+          token: ${{ secrets.DONKIDUNK_TOKEN }}
 
       - name: Update system repositories
         if: matrix.platform == 'ubuntu-24.04' # This must match the platform value defined above.
