@@ -87,7 +87,7 @@ jobs:
 
       - name: Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.DONKIDUNK_TOKEN }}
         run: pnpm semantic-release
 
       - name: set step output
