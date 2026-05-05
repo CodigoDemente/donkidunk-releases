@@ -39,7 +39,7 @@ jobs:
 
       - name: capture release notes
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.DONKIDUNK_TOKEN }}
         run: |
           {
             echo "RELEASE_NOTES<<EOF"
