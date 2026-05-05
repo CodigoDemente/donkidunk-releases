@@ -1,0 +1,183 @@
+name: release
+on:
+  milestone:
+    types:
+      - closed
+  workflow_dispatch:
+
+permissions:
+  contents: read # for checkout
+
+jobs:
+  capture-release-notes:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # to be able to publish a GitHub release
+      issues: write # to be able to comment on released issues
+      pull-requests: write # to be able to comment on released pull requests
+      id-token: write # to enable use of OIDC for npm provenance
+    outputs:
+      RELEASE_NOTES: ${{ steps.set-output.outputs.RELEASE_NOTES }}
+    steps:
+      - name: Checkout donkidunk repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          repository: CodigoDemente/donkidunk
+          token: ${{ secrets.DONKIDUNK_TOKEN }}
+          ref: main
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: true
+
+      - name: capture release notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          {
+            echo "RELEASE_NOTES<<EOF"
+            pnpm semantic-release --dry-run 2>&1 | sed -n '/^##/,$p' | sed -e 's/^    \*/  \*/g'
+            echo "EOF"
+          } >> $GITHUB_ENV
+
+      - name: set step output
+        id: set-output
+        run: |
+          {
+            echo "RELEASE_NOTES<<EOF"
+            echo "${RELEASE_NOTES}"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+  release:
+    name: Release
+    runs-on: ubuntu-24.04
+    needs: capture-release-notes
+    outputs:
+      APP_VERSION: ${{ steps.set-output.outputs.APP_VERSION }}
+    permissions:
+      contents: write # to be able to publish a GitHub release
+      issues: write # to be able to comment on released issues
+      pull-requests: write # to be able to comment on released pull requests
+      id-token: write # to enable use of OIDC for npm provenance
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: true
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm semantic-release
+
+      - name: set step output
+        id: set-output
+        run: |
+          echo "APP_VERSION=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
+
+  publish-app:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: "macos-26" # for Arm based macs (M1 and above).
+            args: "--target aarch64-apple-darwin"
+          - platform: "macos-26" # for Intel based macs.
+            args: "--target x86_64-apple-darwin"
+          - platform: "ubuntu-24.04" # for Tauri v1 you could replace this with ubuntu-20.04.
+            args: ""
+          - platform: "windows-2025"
+            args: ""
+
+    runs-on: ${{ matrix.platform }}
+
+    needs: [capture-release-notes, release]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          lfs: true
+
+      - name: Update system repositories
+        if: matrix.platform == 'ubuntu-24.04' # This must match the platform value defined above.
+        run: |
+          sudo apt-get update
+
+      - name: Install system dependencies
+        if: matrix.platform == 'ubuntu-24.04' # This must match the platform value defined above.
+        run: |
+          sudo apt-get install libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Install LinuxDeploy
+        if: matrix.platform == 'ubuntu-24.04' # This must match the platform value defined above.
+        uses: miurahr/install-linuxdeploy-action@v1
+        with:
+          plugins: gstreamer appimage
+          dir: /usr/local/bin
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: true
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
+          targets: ${{ (matrix.platform == 'macos-26' && 'aarch64-apple-darwin,x86_64-apple-darwin') || (matrix.platform == 'windows-2025' && 'x86_64-pc-windows-msvc') || '' }}
+
+      - name: Install WebView2
+        if: matrix.platform == 'windows-2025' # This must match the platform value defined above.
+        run: |
+          Remove-Item -Path WebView2Installer.exe -ErrorAction Ignore
+          Invoke-WebRequest -Uri "https://go.microsoft.com/fwlink/p/?LinkId=2124703" -OutFile "WebView2Installer.exe"
+          if (Test-Path "WebView2Installer.exe") {
+            Start-Process -FilePath WebView2Installer.exe -ArgumentList "/silent /install" -NoNewWindow -Wait
+          } else {
+            echo "Failed to download WebView2 installer"
+            exit 1
+          }
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v${{needs.release.outputs.APP_VERSION}}
+          releaseName: "Donkidunk v${{needs.release.outputs.APP_VERSION}}"
+          releaseBody: ${{ needs.capture-release-notes.outputs.RELEASE_NOTES }}
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}
