@@ -215,7 +215,7 @@ jobs:
           tagName: v${{needs.release.outputs.APP_VERSION}}
           releaseName: "Donkidunk v${{needs.release.outputs.APP_VERSION}}"
           releaseBody: ${{ needs.capture-release-notes.outputs.RELEASE_NOTES }}
-          releaseAssetNamePattern: "[name]-[version]-[platform]-[arch].[ext]"
+          assetNamePattern: "[name]-[version]-[platform]-[arch].[ext]"
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
