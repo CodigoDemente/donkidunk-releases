@@ -211,11 +211,13 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         with:
           tagName: v${{needs.release.outputs.APP_VERSION}}
           releaseName: "Donkidunk v${{needs.release.outputs.APP_VERSION}}"
           releaseBody: ${{ needs.capture-release-notes.outputs.RELEASE_NOTES }}
           assetNamePattern: "[name]-[version]-[platform]-[arch].[ext]"
+          uploadUpdaterJson: true
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
