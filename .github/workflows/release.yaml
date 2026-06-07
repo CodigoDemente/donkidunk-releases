@@ -20,7 +20,7 @@ jobs:
       RELEASE_NOTES: ${{ steps.set-output.outputs.RELEASE_NOTES }}
     steps:
       - name: Checkout donkidunk repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -29,11 +29,11 @@ jobs:
           ref: main
 
       - name: setup node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24.x
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           run_install: true
 
@@ -69,7 +69,7 @@ jobs:
       id-token: write # to enable use of OIDC for npm provenance
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -77,11 +77,11 @@ jobs:
           token: ${{ secrets.DONKIDUNK_TOKEN }}
           ref: main
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24.x
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           run_install: true
 
@@ -116,7 +116,7 @@ jobs:
     needs: [capture-release-notes, release]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: main
           lfs: true
@@ -149,11 +149,11 @@ jobs:
           dir: /usr/local/bin
 
       - name: setup node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24.x
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           run_install: true
 
@@ -217,7 +217,7 @@ jobs:
           releaseName: "Donkidunk v${{needs.release.outputs.APP_VERSION}}"
           releaseBody: ${{ needs.capture-release-notes.outputs.RELEASE_NOTES }}
           assetNamePattern: "[name]-[version]-[platform]-[arch].[ext]"
-          uploadUpdaterJson: true
+          includeUpdaterJson: true
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
