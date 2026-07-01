@@ -205,6 +205,10 @@ jobs:
           echo "CERT_ID=$CERT_ID" >> $GITHUB_ENV
           echo "Certificate imported: $CERT_ID"
 
+      - name: Inject production public key
+        run: |
+          echo "$JWT_PUBLIC_KEY" > $GITHUB_WORKSPACE/src-tauri/assets/keys/public_key.pem
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
