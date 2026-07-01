@@ -206,8 +206,12 @@ jobs:
           echo "Certificate imported: $CERT_ID"
 
       - name: Inject production public key
+        env:
+          JWT_PUBLIC_KEY: ${{ secrets.JWT_PUBLIC_KEY }}
+        shell: bash
         run: |
-          echo "$JWT_PUBLIC_KEY" > $GITHUB_WORKSPACE/src-tauri/assets/keys/public_key.pem
+          mkdir -p "$GITHUB_WORKSPACE/src-tauri/assets/keys"
+          printf '%s\n' "$JWT_PUBLIC_KEY" > "$GITHUB_WORKSPACE/src-tauri/assets/keys/public_key.pem"
 
       - uses: tauri-apps/tauri-action@v0
         env:
