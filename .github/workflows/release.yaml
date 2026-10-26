@@ -196,13 +196,12 @@ jobs:
       - name: Verify Certificate
         if: startsWith(matrix.platform, 'macos')
         run: |
-          CERT_INFO=$(security find-identity -v -p codesigning build.keychain | grep "Developer ID Application")
-          CERT_ID=$(echo "$CERT_INFO" | awk -F'"' '{print $2}')
+          CERT_ID=$(security find-identity -v -p codesigning build.keychain | awk '/Developer ID Application/ {print $2}')
           if [ -z "$CERT_ID" ]; then
             echo "No Developer ID Application identity found in build.keychain"
             exit 1
           fi
-          echo "CERT_ID=$CERT_ID" >> $GITHUB_ENV
+          echo "APPLE_SIGNING_IDENTITY=$CERT_ID" >> "$GITHUB_ENV"
           echo "Certificate imported: $CERT_ID"
 
       - name: Inject production public key
